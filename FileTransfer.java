@@ -125,8 +125,8 @@ public class FileTransfer {
 		System.out.println();
 		System.out.print("==>>:");
 		Scanner sc = new Scanner(System.in);
-		String fileString = sc.next();
-		fileString = fileString.replace("\\", "\\\\");
+		String fileString = sc.nextLine();
+		//fileString = fileString.replace("\\", "\\\\");
 		File file = new File(fileString);
 		//打开端口,显示本机IP
 		ServerSocket server = new ServerSocket(2018);
@@ -136,7 +136,7 @@ public class FileTransfer {
 			System.out.printf("%-12s%-40s%15s","本服务器IP:",it.getHostAddress(),"Port:2018");
 			System.out.println();
 		}
-		if(file.isFile()) {
+		if(!file.isDirectory()) {
 			BufferedInputStream bufferfile = new BufferedInputStream(new FileInputStream(file));
 			System.out.println();
 			System.out.println("------------------------------------------");
