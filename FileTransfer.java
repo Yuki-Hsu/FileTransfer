@@ -77,16 +77,26 @@ public class FileTransfer {
 //		String fileString = "C:\\Users\\Administrator\\Desktop\\22.txt";
 		byte[] data = new byte[1024];
 		int len = -1;
+		// Thread.sleep(1000);
+		for (int i = 0; i < 1000; i++) {
+			System.out.print(i);
+		}
 		len = in.read(data);
 		String filename = new String(data, 0, len);
+		System.out.println("get file name " + System.currentTimeMillis() + filename + len);
 		BufferedOutputStream file = new BufferedOutputStream(new FileOutputStream(filename.split(" ")[0]));
 		System.out.println();
 		System.out.println("------------------------------------------");
 		System.out.println("文件：" + filename);
 		System.out.println("------------------------------------------");
 		//写数据
+		/* for (int i = 0; i < 1000; i++) {
+			System.out.print(i);
+		} */
 		len = in.read(data);
-		long roll = Long.parseLong(new String(data, 0, len));
+		String s = new String(data, 0, len);
+		System.out.println("get file size " + System.currentTimeMillis() + "["+s+"]" + len);
+		long roll = Long.parseLong(s);
 		double count = 0.0;
 		System.out.print("Downloading:");
 		while((len = in.read(data)) != -1) {
@@ -151,6 +161,7 @@ public class FileTransfer {
 			OutputStream out = socket.getOutputStream();
 			//发送文件名
 			out.write((file.getName() + "          大小：" + fileSize(file)).getBytes());
+			System.out.println("send file name" + System.currentTimeMillis());
 			out.flush();
 			//写数据
 			System.out.println();
@@ -158,10 +169,11 @@ public class FileTransfer {
 			long roll = file.length()/1024;
 			double count = 0.0;
 			out.write(Long.toString(roll).getBytes());
+			System.out.println("send file size" + System.currentTimeMillis() + "==" + roll);
 			out.flush();
 			byte[] data = new byte[1024];
 			int len = -1;
-			Thread.sleep(1000);
+			// Thread.sleep(1000);
 			while((len = bufferfile.read(data)) != -1) {
 				out.write(data, 0, len);
 				count++;
