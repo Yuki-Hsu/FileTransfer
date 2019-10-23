@@ -30,7 +30,7 @@ Options:
 ### For client
 
 ```console
-$ java server -h
+$ java client -h
 Usage:
     java server [options]
 Options:
