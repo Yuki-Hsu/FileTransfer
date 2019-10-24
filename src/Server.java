@@ -8,6 +8,7 @@ public class Server {
     private void scheduler(String[] args) {
         if (args.length == 0) {
             init();
+            help();
         } else if (args.length == 1 && (args[0].equals("-h") || args[0].equals("--help"))) {
             help();
         } else {
