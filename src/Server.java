@@ -1,7 +1,18 @@
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.text.DecimalFormat;
 
 public class Server {
-    public int port;//listening port for server
+    private static final String BASETAB = "|   ";// base indent for file showing
+    public int port;// listening port for server
 
     public Server() {
         this.port = 2019;
@@ -9,17 +20,36 @@ public class Server {
 
     /**
      * 根据命令行参数，调度相应功能
+     * 
      * @param args
      */
     private void scheduler(String[] args) {
         if (args.length == 0) {
+            // 开启服务
             init();
         } else if (args.length == 1 && (args[0].equals("-h") || args[0].equals("--help"))) {
             help();
         } else if (args.length == 1 && args[0].equals("-l")) {
             list();
+        } else if (args.length == 2 && args[0].equals("-p")) {
+            // 设置新的监听端口
+            try {
+                int temp = Integer.parseInt(args[1]);
+                if (1024 < temp && temp < 49151) {// 注册端口（Registered Ports）：从1024到49151。它们松散地绑定于一些服务
+                    this.port = temp;
+                } else {
+                    System.out.println("port number is incorrect, please try again");
+                    System.exit(0);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(0);
+            }
+            // 开启服务
+            init();
         } else {
-            
+            System.out.println("can't recognize options, please try 'java Server -h'");
+            System.exit(0);
         }
     }
 
@@ -27,33 +57,98 @@ public class Server {
      * 递归列举当前目录下所有文件
      */
     private void list() {
-        String root_directory = new String(System.getProperty("user.dir"));//获取当前目录
+        String root_directory = new String(System.getProperty("user.dir"));// 获取当前目录
         File file = new File(root_directory);
         // System.out.println(file);
         // System.out.println(file.getAbsolutePath());
         getAllFiles(file, "");
     }
 
+    private void list(BufferedOutputStream bf_out) {
+        String root_directory = new String(System.getProperty("user.dir"));// 获取当前目录
+        File file = new File(root_directory);
+        // System.out.println(file);
+        // System.out.println(file.getAbsolutePath());
+        getAllFiles(file, "", bf_out);
+    }
+
     private void getAllFiles(File file, String tab) {
+        String tabStyle = null;// 声明缩进样式
         if (tab.length() >= 4) {
             char[] temp = tab.toCharArray();
-            for (int i = 1; i < 4; i++) {//修改文件缩进风格
+            for (int i = 1; i < 4; i++) {// 修改文件缩进风格
                 temp[temp.length - i] = '-';
             }
-            String tabStyle = new String(temp);
-            System.out.print(tabStyle);
+            tabStyle = new String(temp);// 新的缩进样式
+            // System.out.print(tabStyle);
         } else {
-            System.out.print(tab);
+            // System.out.print(tab);
+            tabStyle = tab;
         }
         if (file.isFile()) {
-            // System.out.println(file.getName());
-            System.out.printf("%-30s%15s\n", file.getName(), "56.3MB");
+            System.out.printf("%-60s%15s\n", tabStyle + file.getName(), fileSize(file));
         } else {
-            System.out.println(file.getName());
+            System.out.printf("%-60s%15s\n", tabStyle + file.getName(), "......");
             File[] files = file.listFiles();
             for (File f : files) {
-                getAllFiles(f, tab + "|   ");
+                getAllFiles(f, tab + BASETAB);
             }
+        }
+    }
+
+    private void getAllFiles(File file, String tab, BufferedOutputStream bf_out) {
+        String tabStyle = null;// 声明缩进样式
+        if (tab.length() >= 4) {
+            char[] temp = tab.toCharArray();
+            for (int i = 1; i < 4; i++) {// 修改文件缩进风格
+                temp[temp.length - i] = '-';
+            }
+            tabStyle = new String(temp);// 新的缩进样式
+            // System.out.print(tabStyle);
+        } else {
+            // System.out.print(tab);
+            tabStyle = tab;
+        }
+        if (file.isFile()) {
+            String str = String.format("%-60s%15s\n", tabStyle + file.getName(), fileSize(file));
+            try {
+                bf_out.write(str.getBytes("UTF-8"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            String str = String.format("%-60s%15s\n", tabStyle + file.getName(), "......");
+            try {
+                bf_out.write(str.getBytes("UTF-8"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            File[] files = file.listFiles();
+            for (File f : files) {
+                getAllFiles(f, tab + BASETAB, bf_out);
+            }
+        }
+    }
+
+    /**
+     * 获取文件大小
+     * 
+     * @param file
+     * @return
+     */
+    private String fileSize(File file) {
+        long len = file.length();
+        if (len < 1024) {
+            return len + "B";
+        } else if (1024 <= len & len < 1024 * 1024) {
+            DecimalFormat df = new DecimalFormat("#.00");
+            return df.format(len / 1024.0) + "KB";
+        } else if (1024 * 1024 <= len & len < 1024 * 1024 * 1024) {
+            DecimalFormat df = new DecimalFormat("#.00");
+            return df.format(len / 1024.0 / 1024.0) + "MB";
+        } else {
+            DecimalFormat df = new DecimalFormat("#.00");
+            return df.format(len / 1024.0 / 1024.0 / 1024.0) + "GB";
         }
     }
 
@@ -73,7 +168,61 @@ public class Server {
         System.out.println("    -l            List sharing files of current directory");
     }
 
+    /**
+     * 开启服务
+     */
     private void init() {
+        // 显示本机信息
+        String host_name = null;
+        try {
+            host_name = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        System.out.printf("%-15s%-45s\n", "Host  Name:", host_name);
+        try {
+            for (InetAddress it : InetAddress.getAllByName(host_name)) {
+                System.out.printf("%-15s%-45s%10s\n", "IP address:", it.getHostAddress(), Integer.toString(port));
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        // 开启服务端 Socket 并等待用户连接
+        ServerSocket ss = null;
+        try {
+            ss = new ServerSocket(port);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Start on the port:" + port + "failure !");
+            System.exit(0);
+        }
+        // 获取客户端连接
+        try {
+            Socket socket = ss.accept();
+            // 显示 Socket 连接信息
+            InetAddress ipObject = socket.getInetAddress();// 得到IP地址对象
+            String ip = ipObject.getHostAddress();// 得到IP地址字符串
+            int port = socket.getPort();
+            System.out.println("Connecting from   " + ip + ":" + port);
+            // 获取客户端输入参数
+            InputStream in = socket.getInputStream();// 基本流
+            BufferedInputStream bf_in = new BufferedInputStream(in);// 包装成高效缓冲流
+            byte[] buffer = new byte[1024*1024];// 设置缓冲区大小为 1MB
+            int len = bf_in.read(buffer);
+            String args = new String(buffer, 0, len, "UTF-8");
+            if (args.equals("-l")) {
+                // 发送数据
+                OutputStream out = socket.getOutputStream();// 基本流
+                BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                list(bf_out);
+            } else {
+                
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Listening for a connection occurs error !");
+            System.exit(0);
+        }
     }
 
     public static void main(String[] args) {
