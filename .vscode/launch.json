@@ -16,6 +16,13 @@
             "name": "Debug (Launch) - Current File",
             "request": "launch",
             "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Server",
+            "request": "launch",
+            "mainClass": "Server",
+            "projectName": "FileTransfer_34d0f8fa"
         }
     ]
 }

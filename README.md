@@ -15,16 +15,17 @@
 ### For server
 
 ```console
-$ java server -h
+$ java Server -h
+A tool of starting share files in current directory
 Usage:
-    java server [options]
+    java Server [options]
 Options:
-    -h, --help Show help
-    -4 Make all connections via IPv4
-    -6 Make all connections via IPv6
-    -p <port> Set the listening port
-    -c Use specified conf.properties file to start
-    -l List sharing files of current directory
+    -h, --help    Show help
+    -4            Make all connections via IPv4
+    -6            Make all connections via IPv6
+    -p <port>     Set the listening port
+    -c            Use specified conf.properties file to start
+    -l            List sharing files of current directory
 ```
 
 ### For client
