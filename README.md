@@ -20,30 +20,27 @@ A tool of starting share files in current directory
 Usage:
     java Server [options]
 Options:
-    -h, --help    Show help
-    -4            Make all connections via IPv4
-    -6            Make all connections via IPv6
-    -p <port>     Set the listening port
-    -c            Use specified conf.properties file to start
+                  When no option specified, start service on default port: 2019
+    -h, --help    Show help and quit
+    -p <port>     Set the listening port and start service
     -l            List sharing files of current directory
 ```
 
 ### For client
 
 ```console
-$ java client -h
+$ java Client -h
+A tool for download/upload files from remote sharing directory
 Usage:
-    java server [options]
+    java Client <options>
 Options:
-    -h, --help Show help
-    -4 Make all connections via IPv4
-    -6 Make all connections via IPv6
-    -p <port> Set the listening port
-    -c Use specified conf.properties file to start
-    -l List sharing files of server
-    -d <file> Download specified sharing file
-    -d <directory> Download all files in specified directory
-    -u <file> Upload specified file to server
+    -h, --help    Show help
+    -4            Make all connections via IPv4
+    -6            Make all connections via IPv6
+    -c            Use conf.properties file of current directory to start
+    -l            List sharing files of remote host
+    -d <file>     Download specified sharing file from remote host
+    -u <file>     Upload specified file to remote host (you can drag the file to command prompt)
 ```
 
 ## Features

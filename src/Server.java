@@ -1,6 +1,8 @@
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,7 +40,7 @@ public class Server {
                 if (1024 < temp && temp < 49151) {// 注册端口（Registered Ports）：从1024到49151。它们松散地绑定于一些服务
                     this.port = temp;
                 } else {
-                    System.out.println("port number is incorrect, please try again");
+                    System.out.println("The range of port number is incorrect, please try again");
                     System.exit(0);
                 }
             } catch (Exception e) {
@@ -48,8 +50,7 @@ public class Server {
             // 开启服务
             init();
         } else {
-            System.out.println("can't recognize options, please try 'java Server -h'");
-            System.exit(0);
+            System.out.println("Unrecognized parameters, please try 'java Server -h'");
         }
     }
 
@@ -160,11 +161,11 @@ public class Server {
         System.out.println("Usage:");
         System.out.println("    java Server [options]");
         System.out.println("Options:");
-        System.out.println("    -h, --help    Show help");
-        System.out.println("    -4            Make all connections via IPv4");
-        System.out.println("    -6            Make all connections via IPv6");
-        System.out.println("    -p <port>     Set the listening port");
-        System.out.println("    -c            Use specified conf.properties file to start");
+        System.out.println("                  When no option specified, start service on default port: 2019");
+        System.out.println("    -h, --help    Show help and quit");
+        // System.out.println("    -4            Make all connections via IPv4");
+        // System.out.println("    -6            Make all connections via IPv6");
+        System.out.println("    -p <port>     Set the listening port and start service");
         System.out.println("    -l            List sharing files of current directory");
     }
 
@@ -209,14 +210,58 @@ public class Server {
             BufferedInputStream bf_in = new BufferedInputStream(in);// 包装成高效缓冲流
             byte[] buffer = new byte[1024*1024];// 设置缓冲区大小为 1MB
             int len = bf_in.read(buffer);
-            String args = new String(buffer, 0, len, "UTF-8");
-            if (args.equals("-l")) {
-                // 发送数据
-                OutputStream out = socket.getOutputStream();// 基本流
-                BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
-                list(bf_out);
-            } else {
-                
+            if (len != -1) {
+                String args = new String(buffer, 0, len, "UTF-8");
+                System.out.println("recieve args from client: " + args);// 打印收到的参数
+                // 根据参数调度不同功能
+                if (args.equals("-l")) {// 发送文件列表
+                    // 发送数据
+                    OutputStream out = socket.getOutputStream();// 基本流
+                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                    list(bf_out);
+                    // 关闭流
+                    bf_out.close();
+                    bf_in.close();
+                    socket.close();
+                } else if (args.substring(0, 2).equals("-d")) {// 服务端上传文件给客户端
+                    String filename = new String(args.substring(2));
+                    // 发送数据
+                    File file = new File(System.getProperty("user.dir"), filename);// 打开要发送的文件
+                    FileInputStream in_file = new FileInputStream(file);// 基本流
+                    BufferedInputStream bf_in_file = new BufferedInputStream(in_file);// 包装成高效缓冲流
+                    OutputStream out = socket.getOutputStream();// 基本流
+                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                    while ((len = bf_in_file.read(buffer)) != -1) {
+                        bf_out.write(buffer, 0, len);
+                    }
+                    // 关闭流
+                    bf_out.close();
+                    bf_in_file.close();
+                    bf_in.close();
+                    socket.close();
+                } else if (args.substring(0, 2).equals("-u")) {// 客户端上传文件给服务端
+                    // https://www.runoob.com/java/java-regular-expressions.html
+                    String[] strs = new String(args.substring(2)).split("\\\\");
+                    String filename = strs[strs.length - 1];
+                    // 发送数据
+                    OutputStream out = socket.getOutputStream();// 基本流
+                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                    bf_out.write("OK".getBytes("UTF-8"));
+                    bf_out.flush();
+                    // 接收数据
+                    File file = new File(filename);// 打开要接收的文件
+                    FileOutputStream out_file = new FileOutputStream(file);// 基本流
+                    BufferedOutputStream bf_out_file = new BufferedOutputStream(out_file);// 包装成高效缓冲流
+                    while ((len = bf_in.read(buffer)) != -1) {
+                        bf_out_file.write(buffer, 0, len);
+                    }
+                    System.out.println("Receive file success");
+                    // 关闭流
+                    bf_out_file.close();
+                    bf_in.close();
+                    bf_out.close();
+                    socket.close();
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

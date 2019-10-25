@@ -51,13 +51,15 @@ public class FileTransfer {
         Scanner sc = new Scanner(System.in);
         try{
             choose = sc.nextInt();
-//			sc.close();
+            // sc.close();
             if(choose != 1 && choose != 2) {
+                sc.close();
                 throw new Exception();
             }
         } catch(Exception e) {
             System.out.println();
             System.out.print("输入错误，程序退出");
+            sc.close();
             System.exit(0);
         }
     }
@@ -78,9 +80,10 @@ public class FileTransfer {
         byte[] data = new byte[1024];
         int len = -1;
         // Thread.sleep(1000);
-        for (int i = 0; i < 1000; i++) {
+        // 粘包测试
+       /*  for (int i = 0; i < 1000; i++) {
             System.out.print(i);
-        }
+        } */
         len = in.read(data);
         String filename = new String(data, 0, len);
         System.out.println("get file name " + System.currentTimeMillis() + filename + len);
@@ -119,6 +122,7 @@ public class FileTransfer {
         file.close();
         in.close();
         socket.close();
+        sc.close();
     }
 
     //发送者模块
@@ -196,6 +200,7 @@ public class FileTransfer {
             bufferfile.close();
             out.close();
             socket.close();
+            sc.close();
             System.out.println();
         }
         server.close();
