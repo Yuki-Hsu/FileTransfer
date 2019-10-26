@@ -113,8 +113,9 @@ bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流 */
                 while ((len = bf_in_file.read(buffer)) != -1) {
                     bf_out.write(buffer, 0, len);
                     bf_out.flush();
+                    System.out.print("█");
                 }
-                System.out.println("Send file success");
+                System.out.println("\nSend file success");
                 bf_in_file.close();
             } else {
                 System.out.println("Send file failure, remote host ");
@@ -157,7 +158,9 @@ bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流 */
                 bf_out_file.write(buffer, 0, len);
                 // 输出流写完就刷新，确保立即把数据写入文件，及时查看文件变化
                 bf_out_file.flush();
+                System.out.print("█");
             }
+            System.out.println("\nReceive file success");
             // 关闭流
             bf_out_file.close();
             bf_in.close();

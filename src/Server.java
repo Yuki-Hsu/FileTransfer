@@ -197,80 +197,96 @@ public class Server {
             System.out.println("Start on the port:" + port + "failure !");
             System.exit(0);
         }
-        // 获取客户端连接
-        try {
-            Socket socket = ss.accept();
-            // 显示 Socket 连接信息
-            InetAddress ipObject = socket.getInetAddress();// 得到IP地址对象
-            String ip = ipObject.getHostAddress();// 得到IP地址字符串
-            int port = socket.getPort();
-            System.out.println("Connecting from   " + ip + ":" + port);
-            // 获取客户端输入参数
-            InputStream in = socket.getInputStream();// 基本流
-            BufferedInputStream bf_in = new BufferedInputStream(in);// 包装成高效缓冲流
-            byte[] buffer = new byte[1024 * 1024];// 设置缓冲区大小为 1MB
-            int len = bf_in.read(buffer);
-            if (len != -1) {
-                String args = new String(buffer, 0, len, "UTF-8");
-                System.out.println("recieve args from client: " + args);// 打印收到的参数
-                // 根据参数调度不同功能
-                if (args.equals("-l")) {// 发送文件列表
-                    // 发送数据
-                    OutputStream out = socket.getOutputStream();// 基本流
-                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
-                    list(bf_out);
-                    // 关闭流
-                    bf_out.close();
-                    bf_in.close();
-                    socket.close();
-                } else if (args.substring(0, 2).equals("-d")) {// 服务端上传文件给客户端
-                    String filename = new String(args.substring(2));
-                    // 发送数据
-                    File file = new File(System.getProperty("user.dir"), filename);// 打开要发送的文件
-                    FileInputStream in_file = new FileInputStream(file);// 基本流
-                    BufferedInputStream bf_in_file = new BufferedInputStream(in_file);// 包装成高效缓冲流
-                    OutputStream out = socket.getOutputStream();// 基本流
-                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
-                    while ((len = bf_in_file.read(buffer)) != -1) {
-                        bf_out.write(buffer, 0, len);
-                        // 写完后刷新，用来确保接收端立马能从该输出流中读到数据
-                        bf_out.flush();
+        // 一直监听
+        while (true) {
+            // 获取客户端连接
+            try {
+                Socket socket = ss.accept();
+                // 多线程接收客户端
+                new Thread(){
+                    public void run() {
+                        try {
+                            // 显示 Socket 连接信息
+                            InetAddress ipObject = socket.getInetAddress();// 得到IP地址对象
+                            String ip = ipObject.getHostAddress();// 得到IP地址字符串
+                            int port = socket.getPort();
+                            System.out.println("Connecting from   " + ip + ":" + port);
+                            // 获取客户端输入参数
+                            InputStream in = socket.getInputStream();// 基本流
+                            BufferedInputStream bf_in = new BufferedInputStream(in);// 包装成高效缓冲流
+                            byte[] buffer = new byte[1024 * 1024];// 设置缓冲区大小为 1MB
+                            int len = bf_in.read(buffer);
+                            if (len != -1) {
+                                String args = new String(buffer, 0, len, "UTF-8");
+                                System.out.println("recieve args from client: " + args);// 打印收到的参数
+                                // 根据参数调度不同功能
+                                if (args.equals("-l")) {// 发送文件列表
+                                    // 发送数据
+                                    OutputStream out = socket.getOutputStream();// 基本流
+                                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                                    list(bf_out);
+                                    // 关闭流
+                                    bf_out.close();
+                                    bf_in.close();
+                                    socket.close();
+                                } else if (args.substring(0, 2).equals("-d")) {// 服务端上传文件给客户端
+                                    String filename = new String(args.substring(2));
+                                    // 发送数据
+                                    File file = new File(System.getProperty("user.dir"), filename);// 打开要发送的文件
+                                    FileInputStream in_file = new FileInputStream(file);// 基本流
+                                    BufferedInputStream bf_in_file = new BufferedInputStream(in_file);// 包装成高效缓冲流
+                                    OutputStream out = socket.getOutputStream();// 基本流
+                                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                                    while ((len = bf_in_file.read(buffer)) != -1) {
+                                        bf_out.write(buffer, 0, len);
+                                        // 写完后刷新，用来确保接收端立马能从该输出流中读到数据
+                                        bf_out.flush();
+                                        System.out.print("█");
+                                    }
+                                    System.out.println("\nSend file success");
+                                    // 关闭流
+                                    bf_out.close();
+                                    bf_in_file.close();
+                                    bf_in.close();
+                                    socket.close();
+                                } else if (args.substring(0, 2).equals("-u")) {// 客户端上传文件给服务端
+                                    // https://www.runoob.com/java/java-regular-expressions.html
+                                    String[] strs = new String(args.substring(2)).split("\\\\");
+                                    String filename = strs[strs.length - 1];
+                                    // 发送数据
+                                    OutputStream out = socket.getOutputStream();// 基本流
+                                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                                    bf_out.write("OK".getBytes("UTF-8"));
+                                    bf_out.flush();
+                                    // 接收数据
+                                    File file = new File(filename);// 打开要接收的文件
+                                    FileOutputStream out_file = new FileOutputStream(file);// 基本流
+                                    BufferedOutputStream bf_out_file = new BufferedOutputStream(out_file);// 包装成高效缓冲流
+                                    while ((len = bf_in.read(buffer)) != -1) {
+                                        bf_out_file.write(buffer, 0, len);
+                                        bf_out_file.flush();
+                                        System.out.print("█");
+                                    }
+                                    System.out.println("\nReceive file success");
+                                    // 关闭流
+                                    bf_out_file.close();
+                                    bf_in.close();
+                                    bf_out.close();
+                                    socket.close();
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                    // 关闭流
-                    bf_out.close();
-                    bf_in_file.close();
-                    bf_in.close();
-                    socket.close();
-                } else if (args.substring(0, 2).equals("-u")) {// 客户端上传文件给服务端
-                    // https://www.runoob.com/java/java-regular-expressions.html
-                    String[] strs = new String(args.substring(2)).split("\\\\");
-                    String filename = strs[strs.length - 1];
-                    // 发送数据
-                    OutputStream out = socket.getOutputStream();// 基本流
-                    BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
-                    bf_out.write("OK".getBytes("UTF-8"));
-                    bf_out.flush();
-                    // 接收数据
-                    File file = new File(filename);// 打开要接收的文件
-                    FileOutputStream out_file = new FileOutputStream(file);// 基本流
-                    BufferedOutputStream bf_out_file = new BufferedOutputStream(out_file);// 包装成高效缓冲流
-                    while ((len = bf_in.read(buffer)) != -1) {
-                        bf_out_file.write(buffer, 0, len);
-                        bf_out_file.flush();
-                    }
-                    System.out.println("Receive file success");
-                    // 关闭流
-                    bf_out_file.close();
-                    bf_in.close();
-                    bf_out.close();
-                    socket.close();
-                }
+                }.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Listening for a connection occurs error !");
+                System.exit(0);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Listening for a connection occurs error !");
-            System.exit(0);
         }
+        // ss.close();
     }
 
     public static void main(String[] args) {
