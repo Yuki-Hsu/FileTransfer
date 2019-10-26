@@ -13,11 +13,11 @@ import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 
 public class Server {
-    private static final String BASETAB = "|   ";// base indent for file showing
+    private static final String BASETAB = "|   ";// base indent for files list
     public int port;// listening port for server
 
     public Server() {
-        this.port = 2019;
+        this.port = 2019;// 默认的监听端口
     }
 
     /**
@@ -163,8 +163,8 @@ public class Server {
         System.out.println("Options:");
         System.out.println("                  When no option specified, start service on default port: 2019");
         System.out.println("    -h, --help    Show help and quit");
-        // System.out.println("    -4            Make all connections via IPv4");
-        // System.out.println("    -6            Make all connections via IPv6");
+        // System.out.println(" -4 Make all connections via IPv4");
+        // System.out.println(" -6 Make all connections via IPv6");
         System.out.println("    -p <port>     Set the listening port and start service");
         System.out.println("    -l            List sharing files of current directory");
     }
@@ -208,7 +208,7 @@ public class Server {
             // 获取客户端输入参数
             InputStream in = socket.getInputStream();// 基本流
             BufferedInputStream bf_in = new BufferedInputStream(in);// 包装成高效缓冲流
-            byte[] buffer = new byte[1024*1024];// 设置缓冲区大小为 1MB
+            byte[] buffer = new byte[1024 * 1024];// 设置缓冲区大小为 1MB
             int len = bf_in.read(buffer);
             if (len != -1) {
                 String args = new String(buffer, 0, len, "UTF-8");
@@ -233,6 +233,8 @@ public class Server {
                     BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
                     while ((len = bf_in_file.read(buffer)) != -1) {
                         bf_out.write(buffer, 0, len);
+                        // 写完后刷新，用来确保接收端立马能从该输出流中读到数据
+                        bf_out.flush();
                     }
                     // 关闭流
                     bf_out.close();
@@ -254,6 +256,7 @@ public class Server {
                     BufferedOutputStream bf_out_file = new BufferedOutputStream(out_file);// 包装成高效缓冲流
                     while ((len = bf_in.read(buffer)) != -1) {
                         bf_out_file.write(buffer, 0, len);
+                        bf_out_file.flush();
                     }
                     System.out.println("Receive file success");
                     // 关闭流

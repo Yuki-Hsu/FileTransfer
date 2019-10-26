@@ -7,6 +7,7 @@
     - [For server](#for-server)
     - [For client](#for-client)
   - [Features](#features)
+  - [学习笔记](#%e5%ad%a6%e4%b9%a0%e7%ac%94%e8%ae%b0)
 
 ## Usage
 
@@ -44,3 +45,11 @@ Options:
 ```
 
 ## Features
+
+## 学习笔记
+
+- TCP 传输存在粘包问题。即发送端分两次发送数据，接收端一次性全部接收数据
+- 输出流写完就要刷新。即 `OutputStream.write(buffer, 0, len)` 完成后最好立马 `OutputStream.flush()`。好处如下：
+  - Socket 中可以确保一端的 `OutputStream out = socket.getOutputStream()` 输出流的内容可以立马被另一端 `InputStream in = socket.getInputStream()` 输入流取到
+  - 文件流中可以确保文件输出流及时变化，即可以及时看到本地文件大小变化
+- Socket 中一端关闭输出流 `out.close()` 可以使得另一端的 `in.read(buffer)` 调用得到 `-1`，不然 `in.read(buffer)` 会一直阻塞。
