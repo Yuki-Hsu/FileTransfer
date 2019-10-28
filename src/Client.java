@@ -2,6 +2,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,8 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class Client {
@@ -31,15 +34,82 @@ public class Client {
         } else if (args.length == 1 && args[0].equals("-l")) {
             init();
             list();
+        } else if (args.length == 1 && args[0].equals("-c")) {
+            conf();
+        } else if (args.length == 2 && args[0].equals("-c") && args[1].equals("-l") || args.length == 2 && args[0].equals("-l") && args[1].equals("-c")) {
+            conf();
+            list();
         } else if (args.length == 2 && args[0].equals("-d")) {
             init();
             download(args);
         } else if (args.length == 2 && args[0].equals("-u")) {
             init();
             upload(args);
+        } else if (args.length == 3 && args[0].equals("-c") && args[1].equals("-d")) {
+            conf();
+            String[] new_args = Arrays.copyOfRange(args, 1, 3);
+            download(new_args);
+        } else if (args.length == 3 && args[0].equals("-c") && args[1].equals("-u")) {
+            conf();
+            String[] new_args = Arrays.copyOfRange(args, 1, 3);
+            upload(new_args);
         } else {
             System.out.println("Unrecognized parameters, please try 'java Client -h'");
         }
+    }
+
+    /**
+     * 显示配置文件信息
+     */
+    private void conf() {
+        Properties prop = new Properties();
+        try {
+            FileInputStream f_in = new FileInputStream("conf.properties");
+            try {
+                prop.load(f_in);
+                String remote_str = prop.getProperty("remote.host");
+                String port = prop.getProperty("remote.port");
+                // 解析配置文件信息
+                String regex_ipv4 = "^(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|[1-9])\\."
+                + "(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\." + "(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\."
+                + "(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)$";
+                if (remote_str.matches(regex_ipv4)) {// remote.host KEY 值为 IPv4 地址
+                    String[] ipStr = remote_str.split("\\.");
+                    byte[] ipBuf = new byte[4];
+                    for (int i = 0; i < 4; i++) {
+                        ipBuf[i] = (byte) (Integer.parseInt(ipStr[i]) & 0xff);
+                    }
+                    this.remote_host = InetAddress.getByAddress(ipBuf);
+                } else {// remote.host KEY 值为 host name
+                    try {
+                        this.remote_host = InetAddress.getByName(remote_str);
+                    } catch (UnknownHostException e) {
+                        e.printStackTrace();
+                        System.out.println("The value of \"remote.host\" is wrong, please modify the prop.properties file");
+                    }
+                }
+                try {// 根据配置文件设置远程端口
+                    int temp = Integer.parseInt(port);
+                    if (1024 < temp && temp < 49151) {// 注册端口（Registered Ports）：从1024到49151。它们松散地绑定于一些服务
+                        this.port = temp;
+                    } else {
+                        System.out.println("The range of port number is incorrect, modify the prop.properties file");
+                        System.exit(0);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("prop.properties file is incorrect");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Read prop.properties file failure");
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.out.println("There isn't prop.properties file in current directory");
+            System.out.println("Please creat prop.properties file and set the connection information");
+        }
+        System.out.println("Start connecting to " + remote_host.getHostAddress() + ":" + port);
     }
 
     /**
