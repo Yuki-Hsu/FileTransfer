@@ -177,14 +177,20 @@ public class Server {
      */
     private void progressBar(long progress, long max) {
         int length = 80;
-        long blockLength = max / length;
-        long finishedBlock = progress / blockLength;
-        System.out.print("\r");
-        for (long i = 0; i < finishedBlock; i++) {
-            System.out.print(">");
-        }
-        for (long i = finishedBlock; i < length; i++) {
-            System.out.print("-");
+        if (max < length) {
+            for (long i = 0; i < length; i++) {
+                System.out.print(">");
+            }
+        } else {
+            long blockLength = max / length;
+            long finishedBlock = progress / blockLength;
+            System.out.print("\r");
+            for (long i = 0; i < finishedBlock; i++) {
+                System.out.print(">");
+            }
+            for (long i = finishedBlock; i < length; i++) {
+                System.out.print("-");
+            }
         }
     }
 
