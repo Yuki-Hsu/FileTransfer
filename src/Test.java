@@ -1,4 +1,5 @@
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 
 public class Test {
     public static void main(String[] args) throws Exception {
@@ -14,5 +15,12 @@ public class Test {
 
         System.out.println("itcast的IP地址：" + remote.getHostAddress());
         System.out.println("itcast的主机名为：" + remote.getHostName());
+        System.out.println("[█████=========================]█████=========================█████=========================");
+
+        long max = 15126265656266L;
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.putLong(0, max);
+        byte[] bs = buffer.array();
+        System.out.println(bs.length);
     }
 }

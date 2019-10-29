@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 
 public class Server {
@@ -170,6 +171,24 @@ public class Server {
     }
 
     /**
+     * 打印进度条
+     * @param progress
+     * @param max
+     */
+    private void progressBar(long progress, long max) {
+        int length = 80;
+        long blockLength = max / length;
+        long finishedBlock = progress / blockLength;
+        System.out.print("\r");
+        for (long i = 0; i < finishedBlock; i++) {
+            System.out.print(">");
+        }
+        for (long i = finishedBlock; i < length; i++) {
+            System.out.print("-");
+        }
+    }
+
+    /**
      * 开启服务
      */
     private void init() {
@@ -233,15 +252,23 @@ public class Server {
                                     String filename = new String(args.substring(2));
                                     // 发送数据
                                     File file = new File(System.getProperty("user.dir"), filename);// 打开要发送的文件
+                                    long max = file.length();
                                     FileInputStream in_file = new FileInputStream(file);// 基本流
                                     BufferedInputStream bf_in_file = new BufferedInputStream(in_file);// 包装成高效缓冲流
                                     OutputStream out = socket.getOutputStream();// 基本流
                                     BufferedOutputStream bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流
+                                    // long to byte[]
+                                    byte[] bs = ByteBuffer.allocate(8).putLong(0, max).array();
+                                    bf_out.write(bs);// 发送文件大小
+                                    bf_out.flush();
+                                    long progress = 0;
                                     while ((len = bf_in_file.read(buffer)) != -1) {
                                         bf_out.write(buffer, 0, len);
                                         // 写完后刷新，用来确保接收端立马能从该输出流中读到数据
                                         bf_out.flush();
-                                        System.out.print("█");
+                                        progress += len;
+                                        // 进度条显示
+                                        progressBar(progress, max);
                                     }
                                     System.out.println("\nSend file success");
                                     // 关闭流
@@ -262,10 +289,16 @@ public class Server {
                                     File file = new File(filename);// 打开要接收的文件
                                     FileOutputStream out_file = new FileOutputStream(file);// 基本流
                                     BufferedOutputStream bf_out_file = new BufferedOutputStream(out_file);// 包装成高效缓冲流
+                                    byte[] bs = bf_in.readNBytes(8);// 读取文件大小
+                                    // byte[] to long
+                                    long max = ByteBuffer.allocate(8).put(bs, 0, bs.length).flip().getLong();
+                                    long progress = 0;
                                     while ((len = bf_in.read(buffer)) != -1) {
                                         bf_out_file.write(buffer, 0, len);
                                         bf_out_file.flush();
-                                        System.out.print("█");
+                                        progress += len;
+                                        // 进度条显示
+                                        progressBar(progress, max);
                                     }
                                     System.out.println("\nReceive file success");
                                     // 关闭流

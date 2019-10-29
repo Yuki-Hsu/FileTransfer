@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.Scanner;
@@ -178,12 +179,20 @@ bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流 */
             if (new String(buffer, 0, len, "UTF-8").equals("OK")) {
                 // 发送数据
                 File file = new File(args[1]);// 打开要发送的文件
+                long max = file.length();
+                // long to byte[]
+                byte[] bs = ByteBuffer.allocate(8).putLong(0, max).array();
+                bf_out.write(bs);// 发送文件大小
+                bf_out.flush();
                 FileInputStream in_file = new FileInputStream(file);// 基本流
                 BufferedInputStream bf_in_file = new BufferedInputStream(in_file);// 包装成高效缓冲流
+                long progress = 0;
                 while ((len = bf_in_file.read(buffer)) != -1) {
                     bf_out.write(buffer, 0, len);
                     bf_out.flush();
-                    System.out.print("█");
+                    progress += len;
+                    // 进度条显示
+                    progressBar(progress, max);
                 }
                 System.out.println("\nSend file success");
                 bf_in_file.close();
@@ -224,11 +233,17 @@ bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流 */
             BufferedInputStream bf_in = new BufferedInputStream(in);// 包装成高效缓冲流
             byte[] buffer = new byte[1024 * 1024];// 设置缓冲区大小为 1MB
             int len = -1;
+            byte[] bs = bf_in.readNBytes(8);// 读取文件大小
+            // byte[] to long
+            long max = ByteBuffer.allocate(8).put(bs, 0, bs.length).flip().getLong();
+            long progress = 0;
             while ((len = bf_in.read(buffer)) != -1) {
                 bf_out_file.write(buffer, 0, len);
                 // 输出流写完就刷新，确保立即把数据写入文件，及时查看文件变化
                 bf_out_file.flush();
-                System.out.print("█");
+                progress += len;
+                // 进度条显示
+                progressBar(progress, max);
             }
             System.out.println("\nReceive file success");
             // 关闭流
@@ -240,6 +255,24 @@ bf_out = new BufferedOutputStream(out);// 包装成高效缓冲流 */
             e.printStackTrace();
             System.out.println("Connecting to server occurs error !");
             System.exit(0);
+        }
+    }
+
+    /**
+     * 打印进度条
+     * @param progress
+     * @param max
+     */
+    private void progressBar(long progress, long max) {
+        int length = 80;
+        long blockLength = max / length;
+        long finishedBlock = progress / blockLength;
+        System.out.print("\r");
+        for (long i = 0; i < finishedBlock; i++) {
+            System.out.print(">");
+        }
+        for (long i = finishedBlock; i < length; i++) {
+            System.out.print("-");
         }
     }
 
